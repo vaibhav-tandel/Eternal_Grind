@@ -33,6 +33,3 @@ flutter run
 - **Weekly**: Repeats on same weekday each week
 - **Custom**: Daily tasks within date range
 
-## Repository
-
-https://github.com/Soham-Patel1604/Eternal_Grind
