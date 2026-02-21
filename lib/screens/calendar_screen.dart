@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/auth_provider.dart';
-import '../providers/theme_provider.dart';
 import '../services/firestore_service.dart';
 import '../models/task_model.dart';
+import '../models/task_duration.dart';
 import '../theme/colors.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -27,12 +26,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  Map<DateTime, List<Task>> _tasksByDate = {};
+  final Map<DateTime, List<Task>> _tasksByDate = {};
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final firestoreService = FirestoreService();
     final user = authProvider.currentUser;
     final theme = Theme.of(context);
@@ -324,15 +322,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  task.title,
-                  style: TextStyle(
-                    decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-                    color: task.isCompleted
-                        ? (isDark ? AppColors.dimWhite : Colors.grey)
-                        : (isDark ? AppColors.offWhite : Colors.grey.shade800),
-                    fontSize: 14,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: TextStyle(
+                        decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                        color: task.isCompleted
+                            ? (isDark ? AppColors.dimWhite : Colors.grey)
+                            : (isDark ? AppColors.offWhite : Colors.grey.shade800),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _getDurationColor(task.duration).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            task.duration.displayName,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _getDurationColor(task.duration),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (task.duration != TaskDuration.once && task.endDate != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Text(
+                              'until ${_formatDate(task.endDate!)}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark ? AppColors.dimWhite : Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -342,14 +376,77 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  Color _getDurationColor(TaskDuration duration) {
+    switch (duration) {
+      case TaskDuration.once:
+        return Colors.blue;
+      case TaskDuration.daily:
+        return Colors.green;
+      case TaskDuration.weekly:
+        return Colors.orange;
+      case TaskDuration.custom:
+        return Colors.purple;
+    }
+  }
+
   void _organizeTasksByDate(List<Task> tasks) {
     _tasksByDate.clear();
+    
+    // Process all tasks and add recurring instances
     for (final task in tasks) {
-      final date = _normalizeDate(task.createdAt);
-      if (_tasksByDate[date] == null) {
-        _tasksByDate[date] = [];
+      if (task.duration == TaskDuration.once) {
+        // Add once tasks to their creation date
+        final date = _normalizeDate(task.createdAt);
+        if (_tasksByDate[date] == null) {
+          _tasksByDate[date] = [];
+        }
+        _tasksByDate[date]!.add(task);
+      } else {
+        // For recurring tasks, add them to all applicable dates in the current month
+        _addRecurringTaskToCalendar(task);
       }
-      _tasksByDate[date]!.add(task);
+    }
+  }
+
+  void _addRecurringTaskToCalendar(Task task) {
+    final startOfMonth = DateTime(_focusedDate.year, _focusedDate.month, 1);
+    final endOfMonth = DateTime(_focusedDate.year, _focusedDate.month + 1, 0);
+    
+    DateTime currentDate = startOfMonth;
+    while (currentDate.isBefore(endOfMonth)) {
+      if (_shouldShowTaskOnDate(task, currentDate)) {
+        final date = _normalizeDate(currentDate);
+        if (_tasksByDate[date] == null) {
+          _tasksByDate[date] = [];
+        }
+        _tasksByDate[date]!.add(task);
+      }
+      currentDate = currentDate.add(const Duration(days: 1));
+    }
+  }
+
+  bool _shouldShowTaskOnDate(Task task, DateTime date) {
+    final taskCreatedDate = DateTime(task.createdAt.year, task.createdAt.month, task.createdAt.day);
+    
+    // Don't show before task creation date
+    if (date.isBefore(taskCreatedDate)) {
+      return false;
+    }
+    
+    // Check end date for recurring tasks
+    if (task.endDate != null && date.isAfter(DateTime(task.endDate!.year, task.endDate!.month, task.endDate!.day))) {
+      return false;
+    }
+    
+    switch (task.duration) {
+      case TaskDuration.daily:
+        return true; // Show every day after creation date
+      case TaskDuration.weekly:
+        return date.weekday == taskCreatedDate.weekday; // Show on same weekday
+      case TaskDuration.custom:
+        return true; // Show every day within range
+      default:
+        return false;
     }
   }
 
