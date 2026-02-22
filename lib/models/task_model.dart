@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'task_duration.dart';
 
 class Task {
   final String id;
@@ -7,6 +8,8 @@ class Task {
   final bool isCompleted;
   final DateTime createdAt;
   final DateTime? completedAt;
+  final TaskDuration duration;
+  final DateTime? endDate;
 
   Task({
     required this.id,
@@ -15,6 +18,8 @@ class Task {
     this.isCompleted = false,
     required this.createdAt,
     this.completedAt,
+    this.duration = TaskDuration.once,
+    this.endDate,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +29,8 @@ class Task {
       'isCompleted': isCompleted,
       'createdAt': Timestamp.fromDate(createdAt),
       'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
+      'duration': duration.value,
+      'endDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
     };
   }
 
@@ -38,6 +45,10 @@ class Task {
           : DateTime.now(),
       completedAt: map['completedAt'] != null 
           ? (map['completedAt'] as Timestamp).toDate() 
+          : null,
+      duration: TaskDuration.fromString(map['duration'] ?? 'once'),
+      endDate: map['endDate'] != null 
+          ? (map['endDate'] as Timestamp).toDate() 
           : null,
     );
   }

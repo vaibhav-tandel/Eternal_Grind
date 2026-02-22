@@ -466,7 +466,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final result = await showDialog<Map<String, String>>(
+          final result = await showDialog<Map<String, dynamic>>(
             context: context,
             builder: (_) => const AddTaskDialog(),
           );
@@ -477,6 +477,8 @@ class _HomeScreenState extends State<HomeScreen> {
               result['title']!,
               result['description']!,
               createdAt: _selectedDate,
+              duration: result['duration'],
+              endDate: result['endDate'],
             );
           }
         },

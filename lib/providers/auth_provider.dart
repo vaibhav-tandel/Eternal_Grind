@@ -62,7 +62,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.signOut();
     } catch (e) {
-      print("Sign out error: $e");
+      debugPrint("Sign out error: $e");
     } finally {
       _setLoading(false);
     }
