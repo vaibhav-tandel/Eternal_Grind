@@ -126,7 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: isDark ? AppColors.charcoal : Colors.red.shade50,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.cursedRed, width: 2),
+                      side: BorderSide(color: AppColors.cursedRed, width: 2),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -166,7 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: isDark ? AppColors.charcoal : Colors.amber.shade50,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.mutedGold, width: 1),
+                      side: BorderSide(color: AppColors.mutedGold, width: 1),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),

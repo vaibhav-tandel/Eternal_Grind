@@ -68,6 +68,9 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Alias for signOut to match the call in profile_screen.dart
+  Future<void> logout() => signOut();
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

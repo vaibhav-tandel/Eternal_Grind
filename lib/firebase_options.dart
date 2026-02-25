@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -49,22 +50,25 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBZHG4xgij-1vaiN5VX4RneI54ny0zRNf0',
-    appId: '1:659328012433:web:cce6f56ccc23dc4de0af30',
-    messagingSenderId: '659328012433',
-    projectId: 'eternal-grind',
-    authDomain: 'eternal-grind.firebaseapp.com',
-    storageBucket: 'eternal-grind.firebasestorage.app',
-    measurementId: 'G-HP7HH45CQN',
-  );
+  static FirebaseOptions get web {
+    return FirebaseOptions(
+      apiKey: dotenv.env['FIREBASE_WEB_API_KEY'] ?? 'MISSING_WEB_API_KEY',
+      appId: dotenv.env['FIREBASE_WEB_APP_ID'] ?? 'MISSING_WEB_APP_ID',
+      messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? 'MISSING_SENDER_ID',
+      projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? 'MISSING_PROJECT_ID',
+      authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? 'MISSING_AUTH_DOMAIN',
+      storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? 'MISSING_STORAGE_BUCKET',
+      measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID'],
+    );
+  }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDE-5V1njfeDbDmdaelgYbjHnKje_S5KCM',
-    appId: '1:659328012433:android:b53f0ca58945d36be0af30',
-    messagingSenderId: '659328012433',
-    projectId: 'eternal-grind',
-    storageBucket: 'eternal-grind.firebasestorage.app',
-  );
-
+  static FirebaseOptions get android {
+    return FirebaseOptions(
+      apiKey: dotenv.env['FIREBASE_ANDROID_API_KEY'] ?? 'MISSING_ANDROID_API_KEY',
+      appId: dotenv.env['FIREBASE_ANDROID_APP_ID'] ?? 'MISSING_ANDROID_APP_ID',
+      messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? 'MISSING_SENDER_ID',
+      projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? 'MISSING_PROJECT_ID',
+      storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? 'MISSING_STORAGE_BUCKET',
+    );
+  }
 }
