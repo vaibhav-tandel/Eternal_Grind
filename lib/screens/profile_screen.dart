@@ -69,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        auth.currentUser ?? 'User',
+                        auth.currentUser?.email ?? 'User',
                         style: AppTextStyles.h2,
                       ),
                       Text(

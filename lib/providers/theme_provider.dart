@@ -34,4 +34,19 @@ class ThemeProvider with ChangeNotifier {
       await _firestoreService.updateTheme(uid, isDark);
     }
   }
+
+  void setThemeMode(ThemeMode mode) {
+    _themeMode = mode;
+    notifyListeners();
+    
+    // Save to local storage
+    final isDark = mode == ThemeMode.dark;
+    _localStorageService.setThemeMode(isDark);
+    
+    // Sync with Firestore if logged in
+    final uid = _localStorageService.uid;
+    if (uid != null) {
+      _firestoreService.updateTheme(uid, isDark);
+    }
+  }
 }
