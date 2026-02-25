@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("Building HomeScreen");
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final firestoreService = FirestoreService();
@@ -29,7 +30,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    if (user == null) return const SizedBox.shrink();
+    debugPrint("User: ${user?.uid}");
+    debugPrint("Theme: ${theme.brightness}");
+
+    if (user == null) {
+      debugPrint("User is null, returning to login");
+      return const Scaffold(
+        body: Center(
+          child: Text('User not found, redirecting to login...'),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -219,55 +230,43 @@ class _HomeScreenState extends State<HomeScreen> {
             child: StreamBuilder<List<Task>>(
               stream: firestoreService.getTasksForDateStream(user.uid, _selectedDate),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                debugPrint("StreamBuilder state: ${snapshot.connectionState}");
+                debugPrint("StreamBuilder hasError: ${snapshot.hasError}");
+                debugPrint("StreamBuilder hasData: ${snapshot.hasData}");
+                
+                // Show loading only on initial connection, not when data is available
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                   debugPrint("StreamBuilder waiting for initial data...");
                    return const Center(child: CircularProgressIndicator());
                 }
+                
                 if (snapshot.hasError) {
+                   debugPrint("StreamBuilder encountered an error: ${snapshot.error}");
                    return Center(
-                     child: Text(
-                       'Error: ${snapshot.error}',
-                       style: TextStyle(color: AppColors.cursedRed),
+                     child: Column(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       children: [
+                         const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                         const SizedBox(height: 16),
+                         Text(
+                           'Error loading tasks',
+                           style: TextStyle(color: AppColors.cursedRed),
+                         ),
+                         const SizedBox(height: 8),
+                         Text(
+                           '${snapshot.error}',
+                           style: const TextStyle(fontSize: 12),
+                           textAlign: TextAlign.center,
+                         ),
+                       ],
                      ),
                    );
                 }
                 
                 final tasks = snapshot.data ?? [];
+                debugPrint("StreamBuilder received data. Tasks count: ${tasks.length}");
                 
-                if (tasks.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.fitness_center_rounded,
-                          size: 80,
-                          color: isDark ? AppColors.charcoalLight : Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'NO TASKS FOR THIS DATE',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                            color: isDark ? AppColors.mutedGold : AppColors.deepRed,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Add tasks or select a different date',
-                          style: TextStyle(
-                            color: isDark ? AppColors.dimWhite : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final completedCount = tasks.where((t) => t.isCompleted).length;
-                final progress = tasks.isEmpty ? 0.0 : completedCount / tasks.length;
-
+                // Always show the UI, even if tasks are empty
                 return Column(
                   children: [
                     // Progress indicator
@@ -287,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               Text(
-                                '$completedCount / ${tasks.length}',
+                                '${tasks.where((t) => t.isCompleted).length} / ${tasks.length}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: isDark ? AppColors.mutedGold : AppColors.deepRed,
@@ -296,166 +295,193 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 8,
-                              backgroundColor: isDark ? AppColors.charcoalLight : Colors.grey.shade300,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                progress == 1.0 
-                                    ? (isDark ? AppColors.mutedGold : Colors.green) 
-                                    : (isDark ? AppColors.deepRed : AppColors.deepRed),
-                              ),
+                          LinearProgressIndicator(
+                            value: tasks.isEmpty ? 0.0 : tasks.where((t) => t.isCompleted).length / tasks.length,
+                            minHeight: 8,
+                            backgroundColor: isDark ? AppColors.charcoalLight : Colors.grey.shade300,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              tasks.isEmpty || (tasks.where((t) => t.isCompleted).length / tasks.length) != 1.0 
+                                  ? (isDark ? AppColors.deepRed : AppColors.deepRed)
+                                  : (isDark ? AppColors.mutedGold : Colors.green),
                             ),
                           ),
                         ],
                       ),
                     ),
                     
-                    // Task list
+                    // Task list or empty state
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
-                          final task = tasks[index];
-                          return Dismissible(
-                            key: Key(task.id),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.cursedRed,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.delete_rounded,
-                                color: Colors.white,
-                              ),
-                            ),
-                            confirmDismiss: (direction) async {
-                              return await showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Delete Task'),
-                                  content: Text('Delete "${task.title}"?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(ctx).pop(false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.of(ctx).pop(true),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppColors.cursedRed,
-                                      ),
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            onDismissed: (direction) async {
-                              await firestoreService.deleteTask(user.uid, task.id);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Task "${task.title}" deleted'),
-                                    backgroundColor: isDark ? AppColors.charcoal : null,
+                      child: tasks.isEmpty 
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.fitness_center_rounded,
+                                    size: 80,
+                                    color: isDark ? AppColors.charcoalLight : Colors.grey.shade400,
                                   ),
-                                );
-                              }
-                            },
-                            child: Card(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              child: ListTile(
-                                leading: Checkbox(
-                                  value: task.isCompleted,
-                                  activeColor: isDark ? AppColors.mutedGold : AppColors.deepRed,
-                                  onChanged: (val) async {
-                                    await firestoreService.toggleTaskStatus(
-                                      user.uid, 
-                                      task.id, 
-                                      val ?? false,
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'NO TASKS FOR THIS DATE',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                      color: isDark ? AppColors.mutedGold : AppColors.deepRed,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Add tasks or select a different date',
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.dimWhite : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: tasks.length,
+                              itemBuilder: (context, index) {
+                                final task = tasks[index];
+                                return Dismissible(
+                                  key: Key(task.id),
+                                  direction: DismissDirection.endToStart,
+                                  background: Container(
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.only(right: 20),
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cursedRed,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete_rounded,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  confirmDismiss: (direction) async {
+                                    return await showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Delete Task'),
+                                        content: Text('Delete "${task.title}"?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(ctx).pop(false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.of(ctx).pop(true),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: AppColors.cursedRed,
+                                            ),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      ),
                                     );
-                                    
-                                    if (val == true) {
-                                      final userDoc = await firestoreService.getUser(user.uid);
-                                      final data = userDoc.data();
-                                      final currentStreak = data?['currentStreak'] ?? 0;
-                                      DateTime? lastTaskDate;
-                                      if (data != null && data['lastTaskDate'] != null) {
-                                         lastTaskDate = (data['lastTaskDate'] as Timestamp).toDate();
-                                      }
-                                      
-                                      final (newStreak, changed) = StreakLogic.calculateNewStreak(
-                                        currentStreak, 
-                                        lastTaskDate,
+                                  },
+                                  onDismissed: (direction) async {
+                                    await firestoreService.deleteTask(user.uid, task.id);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Task "${task.title}" deleted'),
+                                          backgroundColor: isDark ? AppColors.charcoal : null,
+                                        ),
                                       );
-                                      
-                                      if (changed) {
-                                         await firestoreService.updateUserStats(
-                                           user.uid, 
-                                           streak: newStreak, 
-                                           lastTaskDate: DateTime.now(),
-                                         );
-                                         
-                                         // Show milestone message
-                                         if (context.mounted && _isMilestone(newStreak)) {
-                                           ScaffoldMessenger.of(context).showSnackBar(
-                                             SnackBar(
-                                               content: Text(
-                                                 _getMilestoneMessage(newStreak),
-                                                 style: const TextStyle(fontWeight: FontWeight.bold),
-                                               ),
-                                               backgroundColor: isDark ? AppColors.mutedGold : Colors.orange,
-                                               duration: const Duration(seconds: 4),
-                                             ),
-                                           );
-                                         }
-                                      } else {
-                                         await firestoreService.updateUserStats(
-                                           user.uid, 
-                                           lastTaskDate: DateTime.now(),
-                                         );
-                                      }
                                     }
                                   },
-                                ),
-                                title: Text(
-                                  task.title,
-                                  style: TextStyle(
-                                    decoration: task.isCompleted 
-                                        ? TextDecoration.lineThrough 
-                                        : null,
-                                    color: task.isCompleted 
-                                        ? (isDark ? AppColors.dimWhite : Colors.grey) 
-                                        : null,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                subtitle: task.description.isNotEmpty 
-                                    ? Text(
-                                        task.description,
+                                  child: Card(
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    child: ListTile(
+                                      leading: Checkbox(
+                                        value: task.isCompleted,
+                                        activeColor: isDark ? AppColors.mutedGold : AppColors.deepRed,
+                                        onChanged: (val) async {
+                                          await firestoreService.toggleTaskStatus(
+                                            user.uid, 
+                                            task.id, 
+                                            val ?? false,
+                                          );
+                                          
+                                          if (val == true) {
+                                            final userDoc = await firestoreService.getUser(user.uid);
+                                            final data = userDoc.data();
+                                            final currentStreak = data?['currentStreak'] ?? 0;
+                                            DateTime? lastTaskDate;
+                                            if (data != null && data['lastTaskDate'] != null) {
+                                               lastTaskDate = (data['lastTaskDate'] as Timestamp).toDate();
+                                            }
+                                            
+                                            final (newStreak, changed) = StreakLogic.calculateNewStreak(
+                                              currentStreak, 
+                                              lastTaskDate,
+                                            );
+                                            
+                                            if (changed) {
+                                               await firestoreService.updateUserStats(
+                                                 user.uid, 
+                                                 streak: newStreak, 
+                                                 lastTaskDate: DateTime.now(),
+                                               );
+                                                
+                                               // Show milestone message
+                                               if (context.mounted && _isMilestone(newStreak)) {
+                                                 ScaffoldMessenger.of(context).showSnackBar(
+                                                   SnackBar(
+                                                     content: Text(
+                                                       _getMilestoneMessage(newStreak),
+                                                       style: const TextStyle(fontWeight: FontWeight.bold),
+                                                     ),
+                                                     backgroundColor: isDark ? AppColors.mutedGold : Colors.orange,
+                                                     duration: const Duration(seconds: 4),
+                                                   ),
+                                                 );
+                                               }
+                                            } else {
+                                               await firestoreService.updateUserStats(
+                                                 user.uid, 
+                                                 lastTaskDate: DateTime.now(),
+                                               );
+                                            }
+                                          }
+                                        },
+                                      ),
+                                      title: Text(
+                                        task.title,
                                         style: TextStyle(
-                                          color: isDark ? AppColors.dimWhite : Colors.grey.shade600,
+                                          decoration: task.isCompleted 
+                                              ? TextDecoration.lineThrough 
+                                              : null,
+                                          color: task.isCompleted 
+                                              ? (isDark ? AppColors.dimWhite : Colors.grey) 
+                                              : null,
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                      ) 
-                                    : null,
-                                trailing: task.isCompleted
-                                    ? Icon(
-                                        Icons.check_circle_rounded,
-                                        color: isDark ? AppColors.mutedGold : Colors.green,
-                                      )
-                                    : null,
-                              ),
+                                      ),
+                                      subtitle: task.description.isNotEmpty 
+                                          ? Text(
+                                              task.description,
+                                              style: TextStyle(
+                                                color: isDark ? AppColors.dimWhite : Colors.grey.shade600,
+                                              ),
+                                            ) 
+                                          : null,
+                                      trailing: task.isCompleted
+                                          ? Icon(
+                                              Icons.check_circle_rounded,
+                                              color: isDark ? AppColors.mutedGold : Colors.green,
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 );

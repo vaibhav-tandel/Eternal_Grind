@@ -96,27 +96,23 @@ class FirestoreService {
   }
 
   Stream<List<Task>> getTasksForDateStream(String uid, DateTime date) {
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-    
     return _db
         .collection('users')
         .doc(uid)
         .collection('tasks')
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
+          debugPrint("Firestore snapshot received: ${snapshot.docs.length} documents");
           final tasks = snapshot.docs
               .map((doc) => Task.fromMap(doc.id, doc.data()))
               .toList();
           
-          // Add recurring tasks for this date
-          final allTasks = <Task>[];
-          allTasks.addAll(tasks);
+          // Filter tasks for the specific date
+          final filteredTasks = _addRecurringTasksForDate(tasks, date);
+          debugPrint("Filtered tasks for date: ${filteredTasks.length}");
           
-          return _addRecurringTasksForDate(allTasks, date);
+          return filteredTasks;
         });
   }
 
