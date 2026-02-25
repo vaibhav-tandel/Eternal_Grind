@@ -52,6 +52,9 @@ dependencies:
   # Custom fonts
   google_fonts: ^6.1.0
 
+  # Environment variables
+  flutter_dotenv: ^5.1.0
+
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
