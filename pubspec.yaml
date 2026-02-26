@@ -77,6 +77,12 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
 
+  # Specify supported platforms: Android, Web, and Windows only
+  platforms:
+    android:
+    web:
+    windows:
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
