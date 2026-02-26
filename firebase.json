@@ -1,1 +1,28 @@
-{"firestore":{"database":"(default)","location":"asia-south1","rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"eternal-grind","appId":"1:659328012433:android:b53f0ca58945d36be0af30","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"eternal-grind","configurations":{"android":"1:659328012433:android:b53f0ca58945d36be0af30","web":"1:659328012433:web:cce6f56ccc23dc4de0af30"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-south1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "eternal-grind",
+          "appId": "1:659328012433:android:b53f0ca58945d36be0af30",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "eternal-grind",
+          "configurations": {
+            "android": "1:659328012433:android:b53f0ca58945d36be0af30",
+            "web": "1:659328012433:web:cce6f56ccc23dc4de0af30"
+          }
+        }
+      }
+    }
+  }
+}
