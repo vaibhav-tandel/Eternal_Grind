@@ -95,7 +95,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.only(
+              left: MediaQuery.of(context).size.width * 0.05,
+              right: MediaQuery.of(context).size.width * 0.05,
+              top: MediaQuery.of(context).padding.top + (MediaQuery.of(context).size.height * 0.02),
+              bottom: MediaQuery.of(context).padding.bottom + (MediaQuery.of(context).size.height * 0.02),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
