@@ -113,18 +113,47 @@ class TaskManagerScreen extends StatelessWidget {
               
               // Task list
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: provider.tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = provider.tasks[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TaskCard(
-                        task: task,
-                        onToggle: () => provider.toggleTask(task.id),
-                      ),
-                    );
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final orientation = MediaQuery.of(context).orientation;
+                    final crossAxisCount = orientation == Orientation.landscape ? 2 : 1;
+                    
+                    if (orientation == Orientation.landscape && constraints.maxWidth > 600) {
+                      // Use grid layout for landscape on wide screens
+                      return GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: 3.0,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: provider.tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = provider.tasks[index];
+                          return TaskCard(
+                            task: task,
+                            onToggle: () => provider.toggleTask(task.id),
+                          );
+                        },
+                      );
+                    } else {
+                      // Use list view for portrait or narrow screens
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: provider.tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = provider.tasks[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TaskCard(
+                              task: task,
+                              onToggle: () => provider.toggleTask(task.id),
+                            ),
+                          );
+                        },
+                      );
+                    }
                   },
                 ),
               ),

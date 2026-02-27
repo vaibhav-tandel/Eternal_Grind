@@ -118,7 +118,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // --- User Stats Header ---
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: MediaQuery.of(context).padding.top + 16,
+              bottom: 16,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -527,6 +532,10 @@ class _HomeScreenState extends State<HomeScreen> {
     Color color,
     bool isDark,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final fontSize = screenWidth < 360 ? 28.0 : 36.0; // Smaller font for small screens
+    final emojiSize = screenWidth < 360 ? 20.0 : 28.0;
+    
     return Column(
       children: [
         Row(
@@ -535,13 +544,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               '$value',
               style: TextStyle(
-                fontSize: 36,
+                fontSize: fontSize,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
             const SizedBox(width: 8),
-            Text(emoji, style: const TextStyle(fontSize: 28)),
+            Text(emoji, style: TextStyle(fontSize: emojiSize)),
           ],
         ),
         const SizedBox(height: 4),
